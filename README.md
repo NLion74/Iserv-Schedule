@@ -1,2 +1,2 @@
 # Iserv-Schedule
-A tool that can scrape WebUntis Schedule Tables and send notifications to gotify
+A tool that can scrape WebUntis Schedule Tables and send notifications to discord using a discord webhook
