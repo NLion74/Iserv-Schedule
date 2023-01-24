@@ -2,13 +2,15 @@ import os
 from bs4 import BeautifulSoup
 import requests
 import pandas as pd
+from discord_webhook import DiscordWebhook
 
-username = "user.name"
+username = "your.user"
 password = "your_pass" # You will have to disable 2fA
-domain = "https://your.iserv"
-your_class = "your.class"
+domain = "https://your.iserv.tld"
+your_class = "class"
 
-notify_method = "gotify" # Functionality has yet to be added
+notify_method = "discord_webhook"
+webhook_url = "webhook_url" # Optional only required when using discord webhook notify_method
 
 paths = {
         "login": "/iserv/auth/login?_target_path=/iserv/auth/auth?_iserv_app_url%3D%2Fiserv%2F%26client_id%3D16_6cic5kw2maskwckgg804kg400w8wkwwc4o484koswsgsk40okw%26nonce%3D334a68be-3900-4304-ae1d-ad6a97de420d%26redirect_uri%3Dhttps%253A%2F%2Figs-buxtehude.de%2Fiserv%2Fapp%2Fauthentication%2Fredirect%26response_type%3Dcode%26scope%3Dopenid%2520uuid%2520iserv%253Asession-id%2520iserv%253Aweb-ui%2520iserv%253A2fa%253Aconfiguration%2520iserv%253Aaccess-groups%26state%3DeyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6IjEifQ.eyJyZWRpcmVjdF91cmkiOiJodHRwczpcL1wvaWdzLWJ1eHRlaHVkZS5kZVwvaXNlcnZcLyIsIm5vbmNlIjoiMzM0YTY4YmUtMzkwMC00MzA0LWFlMWQtYWQ2YTk3ZGU0MjBkIiwiYWRtaW4iOmZhbHNlLCJpc3MiOiJodHRwczpcL1wvaWdzLWJ1eHRlaHVkZS5kZVwvaXNlcnZcLyIsImV4cCI6MTY2OTIyOTA2OSwibmJmIjoxNjY5MTQyNjA5LCJpYXQiOjE2NjkxNDI2NjksInNpZCI6IiJ9.5lYYvDxPn7foBhGRwzKatK9IHbRG1jntIwQuue96c5WH8ZJxMmqgmDbOU0I-jK6a0pLWyzAacmyGko4s4TNz-g",
@@ -46,11 +48,7 @@ def fetchplans(session):
     soup = BeautifulSoup(plan.content, 'lxml')
     plantd = soup.find_all("table", class_="mon_list")
 
-    plan = session.get(url=domain + paths["plantm"])
-    soup = BeautifulSoup(plan.content, 'lxml')
-    plantm = soup.find_all("table", class_="mon_list")
-
-    return plantd, plantm
+    return plantd
 
 
 def fetchday(session):
@@ -87,7 +85,10 @@ def fetchrows(df):
                 rows["Hour"].append(row['Hour'])
                 rows["Class"].append(row['Class'])
                 rows["Teacher"].append(str(row["Teacher"]).rsplit("â†’")[0])
-                rows["Teacher-change"].append(str(row["Teacher"]).rsplit("â†’")[1])
+                try:
+                    rows["Teacher-change"].append(str(row["Teacher"]).rsplit("â†’")[1])
+                except:
+                    rows["Teacher-change"].append(str(row["Teacher"]).rsplit("â†’")[(len(str(row["Teacher"]).rsplit("â†’")) - 1)])
                 rows["Room"].append(row['Room'])
                 rows["Subject"].append(row['Subject'])
                 rows["Comment"].append(row['Comment'])
@@ -96,6 +97,11 @@ def fetchrows(df):
 
 
 def notify(rows, day, date):
+    if notify_method == "discord_webhook":
+        if not webhook_url.startswith("https://discord.com/api/webhooks/"):
+            print(f"{webhook_url} is not a discord webhook url. Url has to startwith: https://discord.com/api/webhooks/")
+            quit()
+
     for i in range(len(rows['Class'])):
         Type = rows["Type"][i]
         Hour = rows["Hour"][i]
@@ -115,11 +121,41 @@ def notify(rows, day, date):
 
         if Type == "Lehrertausch":
             Type = "Vertretung"
-        elif Type == "Unterricht geändert" or "Unterricht geändert	":
-            Type = " eine Unterrichtsveränderung"
+        elif Type == "Unterricht geändert" or Type == "Unterricht geändert	":
+            Type = "Unterrichtsänderung"
+        elif Type == "Raum-Vtr.":
+            Type = "Raumänderung"
 
-        print(f'{Day} hast du {Type} von {Teacherchange} in {Subject}.')
-        print(f'Am {Date} hast du {Type} von {Teacherchange} statt {Teacher} im Fach {Subject} in der {Hour} Stunde. Der Raum ist {Room}, beteiltigen tun/tut sich die Klassen/Klasse {Class}.')
+        if Type == "Unterrichtsänderung":
+            print(f'{Day} gibt es eine {Type} in der {Hour} Stunde: {Subject}')
+            if notify_method == "discord_webhook":
+                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} gibt es eine {Type} in der {Hour} Stunde: {Subject}')
+                webhook.execute()
+        elif Type == "Betreuung":
+            print(f'{Day} in der {Hour} Stunde hast du {Type} von {Teacherchange} in {Subject}.')
+            if notify_method == "discord_webhook":
+                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde hast du {Type} von {Teacherchange} in {Subject}.')
+                webhook.execute()
+        elif Type == "Ausfall" or Type == "Entfall":
+            print(f'{Day} in der {Hour} Stunde hast du {Type} in {Subject}.')
+            if notify_method == "discord_webhook":
+                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde hast du {Type} in {Subject}.')
+                webhook.execute()
+        elif Type == "Raumänderung":
+            print(f'{Day} in der {Hour} Stunde hast du eine {Type} in {Subject}: {Room}')
+            if notify_method == "discord_webhook":
+                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde hast du eine {Type} in {Subject}: {Room}')
+                webhook.execute()
+        elif Type == "Pausenaufsicht":
+            print(f'{Day} in der {Hour} Stunde hat euer Lehrer {Teacher} {Type}')
+            if notify_method == "discord_webhook":
+                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde hat euer Lehrer {Teacher} {Type}')
+                webhook.execute()
+        else:
+            print(f'{Day} in der {Hour} Stunde hast du {Type}')
+            if notify_method == "discord_webhook":
+                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde hat euer Lehrer {Teacher} {Type}')
+                webhook.execute()
 
 
 def save(table):
@@ -133,12 +169,12 @@ def main():
     if not session:
         quit()
 
-    plantd, plantm = fetchplans(session)
-
-    day, date = fetchday(session)
+    plan = fetchplans(session)
 
     with open('t.html') as f: # Gotta be removed
         table = f.read() # Gotta be removed
+
+    day, date = fetchday(session)
 
     if not os.path.exists("./saved/prevtable.html"):
         with open('./saved/prevtable.html', 'w') as f:
@@ -149,23 +185,17 @@ def main():
             prevtable = f.read()
             f.close()
 
-    if prevtable == table:
+    if prevtable == str(plan):
         print("Nothing changed exiting")
         quit()
 
-    df = fetchdf(table) # Gotta be removed
-    dftd = fetchdf(plantd)
-    dftm = fetchdf(plantd)
+    df = fetchdf(plan) # Gotta be removed
 
     rows = fetchrows(df) # Gotta be removed
-    rowstd = fetchrows(dftd)
-    rowstm = fetchrows(dftm)
 
     notify(rows, day, date) # Gotta be removed
-    notify(rowstd, day, date)
-    notify(rowstm, day, date)
 
-    save(table)
+    save(str(plan))
 
 
 if __name__ == "__main__":
