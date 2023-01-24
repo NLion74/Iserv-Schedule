@@ -4,13 +4,13 @@ import requests
 import pandas as pd
 from discord_webhook import DiscordWebhook
 
-username = "your.user"
-password = "your_pass" # You will have to disable 2fA
-domain = "https://your.iserv.tld"
-your_class = "class"
+username = "user.name"
+password = "user.pass" # You will have to disable 2fA
+domain = "https://your.iserv.instance"
+your_class = "your_class"
 
 notify_method = "discord_webhook"
-webhook_url = "webhook_url" # Optional only required when using discord webhook notify_method
+webhook_url = "https://discord.com/api/webhooks/webhook_id" # Optional only required when using discord webhook notify_method
 
 paths = {
         "login": "/iserv/auth/login?_target_path=/iserv/auth/auth?_iserv_app_url%3D%2Fiserv%2F%26client_id%3D16_6cic5kw2maskwckgg804kg400w8wkwwc4o484koswsgsk40okw%26nonce%3D334a68be-3900-4304-ae1d-ad6a97de420d%26redirect_uri%3Dhttps%253A%2F%2Figs-buxtehude.de%2Fiserv%2Fapp%2Fauthentication%2Fredirect%26response_type%3Dcode%26scope%3Dopenid%2520uuid%2520iserv%253Asession-id%2520iserv%253Aweb-ui%2520iserv%253A2fa%253Aconfiguration%2520iserv%253Aaccess-groups%26state%3DeyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6IjEifQ.eyJyZWRpcmVjdF91cmkiOiJodHRwczpcL1wvaWdzLWJ1eHRlaHVkZS5kZVwvaXNlcnZcLyIsIm5vbmNlIjoiMzM0YTY4YmUtMzkwMC00MzA0LWFlMWQtYWQ2YTk3ZGU0MjBkIiwiYWRtaW4iOmZhbHNlLCJpc3MiOiJodHRwczpcL1wvaWdzLWJ1eHRlaHVkZS5kZVwvaXNlcnZcLyIsImV4cCI6MTY2OTIyOTA2OSwibmJmIjoxNjY5MTQyNjA5LCJpYXQiOjE2NjkxNDI2NjksInNpZCI6IiJ9.5lYYvDxPn7foBhGRwzKatK9IHbRG1jntIwQuue96c5WH8ZJxMmqgmDbOU0I-jK6a0pLWyzAacmyGko4s4TNz-g",
@@ -35,12 +35,27 @@ def login(username, password):
         data=payload,
         allow_redirects=True
     )
+    if str(r.status_code).startswith(('4', '5')):
+        print("Login failed")
+        return False
 
-    if messages["login_failed"] in r.text:
+    elif messages["login_failed"] in r.text:
         print("Login failed")
         return False
 
     return session
+
+
+def logout(session):
+    r = session.get(
+        url=domain + paths["logout"]
+    )
+
+    if str(r.status_code).startswith(('4', '5')):
+        print("Logout Failed")
+        return False
+
+    return True
 
 
 def fetchplans(session):
@@ -175,6 +190,8 @@ def main():
         table = f.read() # Gotta be removed
 
     day, date = fetchday(session)
+
+    logout(session)
 
     if not os.path.exists("./saved/prevtable.html"):
         with open('./saved/prevtable.html', 'w') as f:
