@@ -1,4 +1,5 @@
 import os
+import asyncio
 from bs4 import BeautifulSoup
 import requests
 import pandas as pd
@@ -7,10 +8,10 @@ from discord_webhook import DiscordWebhook
 username = "user.name"
 password = "user.pass" # You will have to disable 2fA
 domain = "https://your.iserv.instance"
-your_class = "your_class"
+your_class = "9.1"
 
 notify_method = "discord_webhook"
-webhook_url = "https://discord.com/api/webhooks/webhook_id" # Optional only required when using discord webhook notify_method
+webhook_url = "discord_webhook_url" # Optional only required when using discord webhook notify_method
 
 paths = {
         "login": "/iserv/auth/login?_target_path=/iserv/auth/auth?_iserv_app_url%3D%2Fiserv%2F%26client_id%3D16_6cic5kw2maskwckgg804kg400w8wkwwc4o484koswsgsk40okw%26nonce%3D334a68be-3900-4304-ae1d-ad6a97de420d%26redirect_uri%3Dhttps%253A%2F%2Figs-buxtehude.de%2Fiserv%2Fapp%2Fauthentication%2Fredirect%26response_type%3Dcode%26scope%3Dopenid%2520uuid%2520iserv%253Asession-id%2520iserv%253Aweb-ui%2520iserv%253A2fa%253Aconfiguration%2520iserv%253Aaccess-groups%26state%3DeyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6IjEifQ.eyJyZWRpcmVjdF91cmkiOiJodHRwczpcL1wvaWdzLWJ1eHRlaHVkZS5kZVwvaXNlcnZcLyIsIm5vbmNlIjoiMzM0YTY4YmUtMzkwMC00MzA0LWFlMWQtYWQ2YTk3ZGU0MjBkIiwiYWRtaW4iOmZhbHNlLCJpc3MiOiJodHRwczpcL1wvaWdzLWJ1eHRlaHVkZS5kZVwvaXNlcnZcLyIsImV4cCI6MTY2OTIyOTA2OSwibmJmIjoxNjY5MTQyNjA5LCJpYXQiOjE2NjkxNDI2NjksInNpZCI6IiJ9.5lYYvDxPn7foBhGRwzKatK9IHbRG1jntIwQuue96c5WH8ZJxMmqgmDbOU0I-jK6a0pLWyzAacmyGko4s4TNz-g",
@@ -22,7 +23,8 @@ messages = {
         "login_failed": "Anmeldung fehlgeschlagen!"
     }
 
-def login(username, password):
+
+async def login(username, password):
     payload = {'_username': f'{username}', '_password': f'{password}'}
 
     session = requests.session()
@@ -46,7 +48,7 @@ def login(username, password):
     return session
 
 
-def logout(session):
+async def logout(session):
     r = session.get(
         url=domain + paths["logout"]
     )
@@ -58,7 +60,7 @@ def logout(session):
     return True
 
 
-def fetchplans(session):
+async def fetchplans(session):
     plan = session.get(url=domain + paths["plantd"])
     soup = BeautifulSoup(plan.content, 'lxml')
     plantd = soup.find_all("table", class_="mon_list")
@@ -66,7 +68,7 @@ def fetchplans(session):
     return plantd
 
 
-def fetchday(session):
+async def fetchday(session):
     plan = session.get(url=domain + paths["plantd"])
     soup = BeautifulSoup(plan.content, 'lxml')
     titles = soup.find_all("div", class_="mon_title")
@@ -80,14 +82,14 @@ def fetchday(session):
     return day, date
 
 
-def fetchdf(plan):
+async def fetchdf(plan):
     df = pd.read_html(str(plan))[0]
     df.columns = ['Type', 'Hour', 'Class', 'Teacher', 'Room', 'Subject', 'Comment']
 
     return df
 
 
-def fetchrows(df):
+async def fetchrows(df):
     rows = {"Type": [], "Hour": [], "Class": [], "Teacher": [], "Teacher-change": [], "Room": [], "Subject": [], "Comment": []}
     for i, row in df.iterrows():
         if str(row['Class']) == your_class or your_class in str((row['Class'])):
@@ -111,7 +113,7 @@ def fetchrows(df):
     return rows
 
 
-def notify(rows, day, date):
+async def notify(rows, day, date):
     if notify_method == "discord_webhook":
         if not webhook_url.startswith("https://discord.com/api/webhooks/"):
             print(f"{webhook_url} is not a discord webhook url. Url has to startwith: https://discord.com/api/webhooks/")
@@ -147,51 +149,51 @@ def notify(rows, day, date):
                 webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} gibt es eine {Type} in der {Hour} Stunde: {Subject}')
                 webhook.execute()
         elif Type == "Betreuung":
-            print(f'{Day} in der {Hour} Stunde hast du {Type} von {Teacherchange} in {Subject}.')
+            print(f'{Day} in der {Hour} Stunde habt ihr {Type} von {Teacherchange} in {Subject}.')
             if notify_method == "discord_webhook":
-                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde hast du {Type} von {Teacherchange} in {Subject}.')
+                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde habt ihr {Type} von {Teacherchange} in {Subject}.')
                 webhook.execute()
         elif Type == "Ausfall" or Type == "Entfall":
-            print(f'{Day} in der {Hour} Stunde hast du {Type} in {Subject}.')
+            print(f'{Day} in der {Hour} Stunde habt ihr {Type} in {Subject}.')
             if notify_method == "discord_webhook":
-                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde hast du {Type} in {Subject}.')
+                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde habt ihr {Type} in {Subject}.')
                 webhook.execute()
         elif Type == "Raumänderung":
-            print(f'{Day} in der {Hour} Stunde hast du eine {Type} in {Subject}: {Room}')
+            print(f'{Day} in der {Hour} Stunde habt ihr eine {Type} in {Subject}: {Room}')
             if notify_method == "discord_webhook":
-                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde hast du eine {Type} in {Subject}: {Room}')
+                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde habt ihr eine {Type} in {Subject}: {Room}')
                 webhook.execute()
         elif Type == "Pausenaufsicht":
             print(f'{Day} in der {Hour} Stunde hat euer Lehrer {Teacher} {Type}')
             if notify_method == "discord_webhook":
-                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde hat euer Lehrer {Teacher} {Type}')
+                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde hat {Teacher} {Type}')
                 webhook.execute()
         else:
-            print(f'{Day} in der {Hour} Stunde hast du {Type}')
+            print(f'{Day} in der {Hour} Stunde habt ihr {Type}')
             if notify_method == "discord_webhook":
-                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde hat euer Lehrer {Teacher} {Type}')
+                webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=f'{Day} in der {Hour} Stunde habt ihr {Type} in {Subject}')
                 webhook.execute()
 
 
-def save(table):
+async def save(table):
     with open("./saved/prevtable.html", "w") as f:
         f.write(table)
         f.close()
 
 
-def main():
-    session = login(username, password)
+async def main():
+    session = await login(username, password)
     if not session:
         quit()
 
-    plan = fetchplans(session)
+    plan = await fetchplans(session)
 
     with open('t.html') as f: # Gotta be removed
         table = f.read() # Gotta be removed
 
-    day, date = fetchday(session)
+    day, date = await fetchday(session)
 
-    logout(session)
+    await logout(session)
 
     if not os.path.exists("./saved/prevtable.html"):
         with open('./saved/prevtable.html', 'w') as f:
@@ -206,14 +208,16 @@ def main():
         print("Nothing changed exiting")
         quit()
 
-    df = fetchdf(plan) # Gotta be removed
+    df = await fetchdf(plan) # Gotta be removed
 
-    rows = fetchrows(df) # Gotta be removed
+    rows = await fetchrows(df) # Gotta be removed
 
-    notify(rows, day, date) # Gotta be removed
+    await notify(rows, day, date) # Gotta be removed
 
-    save(str(plan))
+    await save(str(plan))
+
+    print("Sucessfully ran")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
