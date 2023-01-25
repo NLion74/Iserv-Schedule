@@ -5,13 +5,13 @@ import requests
 import pandas as pd
 from discord_webhook import DiscordWebhook
 
-username = "user.name"
-password = "user.pass" # You will have to disable 2fA
+username = "user_name"
+password = "user_pass" # You will have to disable 2fA
 domain = "https://your.iserv.instance"
-your_class = "9.1"
+your_class = "class"
 
 notify_method = "discord_webhook"
-webhook_url = "discord_webhook_url" # Optional only required when using discord webhook notify_method
+webhook_url = "https://discord.com/api/webhooks/1067522497538433054/ENv3kGUV1qhEcx59t6yzMGr1RMlx55ZLqpguZgOJ8ohq1aZ_1TQ_OY0rpvLFc5K04C9K" # Optional only required when using discord webhook notify_method
 
 paths = {
         "login": "/iserv/auth/login?_target_path=/iserv/auth/auth?_iserv_app_url%3D%2Fiserv%2F%26client_id%3D16_6cic5kw2maskwckgg804kg400w8wkwwc4o484koswsgsk40okw%26nonce%3D334a68be-3900-4304-ae1d-ad6a97de420d%26redirect_uri%3Dhttps%253A%2F%2Figs-buxtehude.de%2Fiserv%2Fapp%2Fauthentication%2Fredirect%26response_type%3Dcode%26scope%3Dopenid%2520uuid%2520iserv%253Asession-id%2520iserv%253Aweb-ui%2520iserv%253A2fa%253Aconfiguration%2520iserv%253Aaccess-groups%26state%3DeyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6IjEifQ.eyJyZWRpcmVjdF91cmkiOiJodHRwczpcL1wvaWdzLWJ1eHRlaHVkZS5kZVwvaXNlcnZcLyIsIm5vbmNlIjoiMzM0YTY4YmUtMzkwMC00MzA0LWFlMWQtYWQ2YTk3ZGU0MjBkIiwiYWRtaW4iOmZhbHNlLCJpc3MiOiJodHRwczpcL1wvaWdzLWJ1eHRlaHVkZS5kZVwvaXNlcnZcLyIsImV4cCI6MTY2OTIyOTA2OSwibmJmIjoxNjY5MTQyNjA5LCJpYXQiOjE2NjkxNDI2NjksInNpZCI6IiJ9.5lYYvDxPn7foBhGRwzKatK9IHbRG1jntIwQuue96c5WH8ZJxMmqgmDbOU0I-jK6a0pLWyzAacmyGko4s4TNz-g",
@@ -188,9 +188,6 @@ async def main():
 
     plan = await fetchplans(session)
 
-    with open('t.html') as f: # Gotta be removed
-        table = f.read() # Gotta be removed
-
     day, date = await fetchday(session)
 
     await logout(session)
@@ -208,11 +205,11 @@ async def main():
         print("Nothing changed exiting")
         quit()
 
-    df = await fetchdf(plan) # Gotta be removed
+    df = await fetchdf(plan)
 
-    rows = await fetchrows(df) # Gotta be removed
+    rows = await fetchrows(df)
 
-    await notify(rows, day, date) # Gotta be removed
+    await notify(rows, day, date)
 
     await save(str(plan))
 
