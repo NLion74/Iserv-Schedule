@@ -5,15 +5,15 @@ import requests
 import pandas as pd
 from discord_webhook import DiscordWebhook
 
-username = "jonte.peiss"
-password = "2ACiaZ68QywTbb" # You will have to disable 2fA
-domain = "https://igs-buxtehude.de"
-your_class = "nan"
+username = "user-name"
+password = "user-pass" # You will have to disable 2fA
+domain = "https://iserv.instance"
+your_class = "user.class"
 
 notify_method = ["discord_webhook", "matrix_notifier"] # Available options: discord_webhook, matrix_notifier
 
 # Discord Webhook
-webhook_url = "https://discord.com/api/webhooks/1067770612031946762/g4xappOgKstKJnoC08oer2Yt9VMJ0D5kfNpcc_xM1QzDC6tQ1ZTzeLS1Z3ByIwsu6swr" # Optional only required when using discord webhook notify_method
+webhook_url = "https://discord.com/api/webhooks/your_webhook" # Optional only required when using discord webhook notify_method
 
 # Matrix-Notifier
 url = "http://127.0.0.1:5505"
