@@ -5,18 +5,19 @@ import requests
 import pandas as pd
 from discord_webhook import DiscordWebhook
 
-username = "user_name"
-password = "user_pass" # You will have to disable 2fA
+username = ""
+password = "" # You will have to disable 2fA
 domain = "https://iserv.instance"
-your_class = "user.class"
+your_class = ""
 
 notify_method = ["discord_webhook", "matrix_notifier"] # Available options: discord_webhook, matrix_notifier
 
 # Discord Webhook
-webhook_url = "[webhook_url]" # Optional only required when using discord webhook notify_method
+webhook_url = "" # Optional only required when using discord webhook notify_method
 
 # Matrix-Notifier
-url = "http://127.0.0.1:5505"
+url = "http://"
+room_id = ""
 
 paths = {
         "login": "/iserv/auth/login?_target_path=/iserv/auth/auth?_iserv_app_url%3D%2Fiserv%2F%26client_id%3D16_6cic5kw2maskwckgg804kg400w8wkwwc4o484koswsgsk40okw%26nonce%3D334a68be-3900-4304-ae1d-ad6a97de420d%26redirect_uri%3Dhttps%253A%2F%2Figs-buxtehude.de%2Fiserv%2Fapp%2Fauthentication%2Fredirect%26response_type%3Dcode%26scope%3Dopenid%2520uuid%2520iserv%253Asession-id%2520iserv%253Aweb-ui%2520iserv%253A2fa%253Aconfiguration%2520iserv%253Aaccess-groups%26state%3DeyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6IjEifQ.eyJyZWRpcmVjdF91cmkiOiJodHRwczpcL1wvaWdzLWJ1eHRlaHVkZS5kZVwvaXNlcnZcLyIsIm5vbmNlIjoiMzM0YTY4YmUtMzkwMC00MzA0LWFlMWQtYWQ2YTk3ZGU0MjBkIiwiYWRtaW4iOmZhbHNlLCJpc3MiOiJodHRwczpcL1wvaWdzLWJ1eHRlaHVkZS5kZVwvaXNlcnZcLyIsImV4cCI6MTY2OTIyOTA2OSwibmJmIjoxNjY5MTQyNjA5LCJpYXQiOjE2NjkxNDI2NjksInNpZCI6IiJ9.5lYYvDxPn7foBhGRwzKatK9IHbRG1jntIwQuue96c5WH8ZJxMmqgmDbOU0I-jK6a0pLWyzAacmyGko4s4TNz-g",
@@ -165,178 +166,65 @@ async def notify(rows, day, date):
 
         if Type == "Unterrichtsänderung":
             message = f'{Day} there is a class change in the {Hour}th hour: {Subject}'
-            print(message)
-            for method in notify_method:
-                if method.lower() == "discord_webhook":
-                    webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=message)
-                    webhook.execute()
-                elif method.lower() == "matrix_notifier":
-                    try:
-                        requests.post(url, data=message)
-                    except requests.exceptions.RequestException:
-                        print("Matrix-Nofier seems to be down")
-                    except UnicodeError:
-                        message = message.replace("â†’", "-->")
-                        try:
-                            requests.post(url, data=message)
-                        except requests.exceptions.RequestException:
-                            print("Matrix-Nofier seems to be down")
-                        except UnicodeError:
-                            message = message.encode("utf-8")
-                            try:
-                                requests.post(url, data=message)
-                            except requests.exceptions.RequestException:
-                                print("Matrix-Nofier seems to be down")
+            await send(notify_method=notify_method, message=message)
         elif Type == "Betreuung":
             message = f'{Day} in the {Hour}th hour you are being supervised by {Teacherchange} in {Subject}.'
             print(message)
-            for method in notify_method:
-                if method.lower() == "discord_webhook":
-                    webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=message)
-                    webhook.execute()
-                elif method.lower() == "matrix_notifier":
-                    try:
-                        requests.post(url, data=message)
-                    except requests.exceptions.RequestException:
-                        print("Matrix-Nofier seems to be down")
-                    except UnicodeError:
-                        message = message.replace("â†’", "-->")
-                        try:
-                            requests.post(url, data=message)
-                        except requests.exceptions.RequestException:
-                            print("Matrix-Nofier seems to be down")
-                        except UnicodeError:
-                            message = message.encode("utf-8")
-                            try:
-                                requests.post(url, data=message)
-                            except requests.exceptions.RequestException:
-                                print("Matrix-Nofier seems to be down")
+            await send(notify_method=notify_method, message=message)
         elif Type == "Ausfall" or Type == "Entfall":
             message = f'{Day} in the {Hour}th hour your {Subject} class is cancelled.'
             print(message)
-            for method in notify_method:
-                if method.lower() == "discord_webhook":
-                    webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=message)
-                    webhook.execute()
-                elif method.lower() == "matrix_notifier":
-                    try:
-                        requests.post(url, data=message)
-                    except requests.exceptions.RequestException:
-                        print("Matrix-Nofier seems to be down")
-                    except UnicodeError:
-                        message = message.replace("â†’", "-->")
-                        try:
-                            requests.post(url, data=message)
-                        except requests.exceptions.RequestException:
-                            print("Matrix-Nofier seems to be down")
-                        except UnicodeError:
-                            message = message.encode("utf-8")
-                            try:
-                                requests.post(url, data=message)
-                            except requests.exceptions.RequestException:
-                                print("Matrix-Nofier seems to be down")
+            await send(notify_method=notify_method, message=message)
         elif Type == "Raumänderung":
             message = f'{Day} in the {Hour}th hour your room changes in {Subject}: {Room}'
             print(message)
-            for method in notify_method:
-                if method.lower() == "discord_webhook":
-                    webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=message)
-                    webhook.execute()
-                elif method.lower() == "matrix_notifier":
-                    try:
-                        requests.post(url, data=message)
-                    except requests.exceptions.RequestException:
-                        print("Matrix-Nofier seems to be down")
-                    except UnicodeError:
-                        message = message.replace("â†’", "-->")
-                        try:
-                            requests.post(url, data=message)
-                        except requests.exceptions.RequestException:
-                            print("Matrix-Nofier seems to be down")
-                        except UnicodeError:
-                            message = message.encode("utf-8")
-                            try:
-                                requests.post(url, data=message)
-                            except requests.exceptions.RequestException:
-                                print("Matrix-Nofier seems to be down")
+            await send(notify_method=notify_method, message=message)
         elif Type == "Pausenaufsicht":
             message = f'{Day} in the {Hour}th hour your Teacher {Teacher} has break supervision'
             print(message)
-            for method in notify_method:
-                if method.lower() == "discord_webhook":
-                    webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=message)
-                    webhook.execute()
-                elif method.lower() == "matrix_notifier":
-                    try:
-                        requests.post(url, data=message)
-                    except requests.exceptions.RequestException:
-                        print("Matrix-Nofier seems to be down")
-                    except UnicodeError:
-                        message = message.replace("â†’", "-->")
-                        try:
-                            requests.post(url, data=message)
-                        except requests.exceptions.RequestException:
-                            print("Matrix-Nofier seems to be down")
-                        except UnicodeError:
-                            message = message.encode("utf-8")
-                            try:
-                                requests.post(url, data=message)
-                            except requests.exceptions.RequestException:
-                                print("Matrix-Nofier seems to be down")
+            await send(notify_method=notify_method, message=message)
         elif Type == "Vertretung":
             message = f'{Day} in the {Hour}th hour you are being teached by {Teacherchange} instead of {Teacher} in {Subject}'
             print(message)
-            for method in notify_method:
-                if method.lower() == "discord_webhook":
-                    webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=message)
-                    webhook.execute()
-                elif method.lower() == "matrix_notifier":
-                    try:
-                        requests.post(url, data=message)
-                    except requests.exceptions.RequestException:
-                        print("Matrix-Nofier seems to be down")
-                    except UnicodeError:
-                        message = message.replace("â†’", "-->")
-                        try:
-                            requests.post(url, data=message)
-                        except requests.exceptions.RequestException:
-                            print("Matrix-Nofier seems to be down")
-                        except UnicodeError:
-                            message = message.encode("utf-8")
-                            try:
-                                requests.post(url, data=message)
-                            except requests.exceptions.RequestException:
-                                print("Matrix-Nofier seems to be down")
+            await send(notify_method=notify_method, message=message)
         else:
             message = f'{Day} in the {Hour}th hour you have: {Type}'
             print(message)
-            for method in notify_method:
-                if method.lower() == "discord_webhook":
-                    webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=message)
-                    webhook.execute()
-                elif method.lower() == "matrix_notifier":
+            await send(notify_method=notify_method, message=message)
+
+
+async def send(notify_method, message):
+    for method in notify_method:
+        if method.lower() == "discord_webhook":
+            webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=message)
+            webhook.execute()
+        elif method.lower() == "matrix_notifier":
+            try:
+                requests.post(url, data=message, headers={"Channel": room_id})
+            except requests.exceptions.RequestException:
+                print("Matrix-Nofier seems to be down")
+            except UnicodeError:
+                message = message.replace("â†’", "-->")
+                try:
+                    requests.post(url, data=message, headers={"Channel": room_id})
+                except requests.exceptions.RequestException:
+                    print("Matrix-Nofier seems to be down")
+                except UnicodeError:
+                    message = message.encode("utf-8")
                     try:
-                        requests.post(url, data=message)
+                        requests.post(url, data=message, headers={"Channel": room_id})
                     except requests.exceptions.RequestException:
                         print("Matrix-Nofier seems to be down")
-                    except UnicodeError:
-                        message = message.replace("â†’", "-->")
-                        try:
-                            requests.post(url, data=message)
-                        except requests.exceptions.RequestException:
-                            print("Matrix-Nofier seems to be down")
-                        except UnicodeError:
-                            message = message.encode("utf-8")
-                            try:
-                                requests.post(url, data=message)
-                            except requests.exceptions.RequestException:
-                                print("Matrix-Nofier seems to be down")
 
 
 async def save(table):
-    with open("./saved/prevtable.html", "w") as f:
-        f.write(table)
-        f.close()
+    try:
+        with open("./saved/prevtable.html", "w") as f:
+            f.write(table)
+            f.close()
+    except UnicodeEncodeError:
+        print("Unicode error while saving prevtable.")
+        raise
 
 
 async def main():
