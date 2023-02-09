@@ -5,19 +5,19 @@ import requests
 import pandas as pd
 from discord_webhook import DiscordWebhook
 
-username = "jonte.peiss"
-password = "5!Wlzv1AKQ0!6P$7" # You will have to disable 2fA
-domain = "https://igs-buxtehude.de"
-your_class = "9.1"
+username = ""
+password = "" # You will have to disable 2fA
+domain = ""
+your_class = ""
 
-notify_method = ["discord_webhook", "matrix_notifier"] # Available options: discord_webhook, matrix_notifier
+notify_method = ["", ""] # Available options: discord_webhook, matrix_notifier
 
 # Discord Webhook
-webhook_url = "https://discord.com/api/webhooks/1068671871786172516/vfDW8-q_kHHFRmITEZdFurYtiUaX6RSXjsQyrwLuDFRmom3aQokyJ6sFyo-B2mbcx1T4" # Optional only required when using discord webhook notify_method
+webhook_url = "" # Optional only required when using discord webhook notify_method
 
 # Matrix-Notifier
-url = "http://192.168.178.31:5505"
-room_id = "!WGpzEZFzgtOQndPklG:nlion.nl"
+url = "http://"
+room_id = ""
 
 paths = {
         "login": "/iserv/auth/login?_target_path=/iserv/auth/auth?_iserv_app_url%3D%2Fiserv%2F%26client_id%3D16_6cic5kw2maskwckgg804kg400w8wkwwc4o484koswsgsk40okw%26nonce%3D334a68be-3900-4304-ae1d-ad6a97de420d%26redirect_uri%3Dhttps%253A%2F%2Figs-buxtehude.de%2Fiserv%2Fapp%2Fauthentication%2Fredirect%26response_type%3Dcode%26scope%3Dopenid%2520uuid%2520iserv%253Asession-id%2520iserv%253Aweb-ui%2520iserv%253A2fa%253Aconfiguration%2520iserv%253Aaccess-groups%26state%3DeyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6IjEifQ.eyJyZWRpcmVjdF91cmkiOiJodHRwczpcL1wvaWdzLWJ1eHRlaHVkZS5kZVwvaXNlcnZcLyIsIm5vbmNlIjoiMzM0YTY4YmUtMzkwMC00MzA0LWFlMWQtYWQ2YTk3ZGU0MjBkIiwiYWRtaW4iOmZhbHNlLCJpc3MiOiJodHRwczpcL1wvaWdzLWJ1eHRlaHVkZS5kZVwvaXNlcnZcLyIsImV4cCI6MTY2OTIyOTA2OSwibmJmIjoxNjY5MTQyNjA5LCJpYXQiOjE2NjkxNDI2NjksInNpZCI6IiJ9.5lYYvDxPn7foBhGRwzKatK9IHbRG1jntIwQuue96c5WH8ZJxMmqgmDbOU0I-jK6a0pLWyzAacmyGko4s4TNz-g",
