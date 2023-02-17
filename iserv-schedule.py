@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 import requests
 import pandas as pd
 from discord_webhook import DiscordWebhook
+from dataclasses import dataclass
+import pickle
 
 username = ""
 password = "" # You will have to disable 2fA
@@ -38,6 +40,19 @@ days = {
     "Samstag": "Saturday",
     "Sonntag": "Sunday",
 }
+
+
+@dataclass
+class ScheduleChange:
+    Type: str
+    Hour: str
+    Class: str
+    Teacher: str
+    Room: str
+    Subject: str
+    Comment: str
+    Day: str
+    Date: str
 
 
 async def login(username, password):
@@ -106,7 +121,7 @@ async def fetchdf(plan):
 
 
 async def fetchrows(df):
-    rows = {"Type": [], "Hour": [], "Class": [], "Teacher": [], "Room": [], "Subject": [], "Comment": []}
+    rows= []
     for i, row in df.iterrows():
         if str(row['Class']) == your_class or your_class in str((row['Class'])):
             if str(row['Type']) == str(row['Class']) and str(row['Hour']) == str(row['Class']) and str(
@@ -114,31 +129,29 @@ async def fetchrows(df):
                     row['Subject']) == str(row['Class']) and str(row['Comment']) == str(row['Class']):
                 continue
             else:
-                rows["Type"].append(row['Type'])
-                rows["Hour"].append(row['Hour'])
-                rows["Class"].append(row['Class'])
-                rows["Teacher"].append(row["Teacher"])
-                rows["Room"].append(row['Room'])
-                rows["Subject"].append(row['Subject'])
-                rows["Comment"].append(row['Comment'])
+                rows.append({'Type': row['Type'],
+                             'Hour': row['Hour'],
+                             'Class': row['Class'],
+                             'Teacher': row['Teacher'],
+                             'Room': row['Room'],
+                             'Subject': row['Subject'],
+                             'Comment': row['Comment'],})
+
+    rows = [dict(t) for t in {tuple(d.items()) for d in rows}]
 
     return rows
 
 
-async def notify(rows, day, date):
-    if notify_method == "discord_webhook":
-        if not webhook_url.startswith("https://discord.com/api/webhooks/"):
-            print(f"{webhook_url} is not a discord webhook url. Url has to startwith: https://discord.com/api/webhooks/")
-            quit()
-
-    for i in range(len(rows['Class'])):
-        Type = rows["Type"][i]
-        Hour = rows["Hour"][i]
-        Class = rows["Class"][i]
-        Teacher = rows["Teacher"][i]
-        Room = rows["Room"][i]
-        Subject = rows["Subject"][i]
-        Comment = rows["Comment"][i]
+async def changefetch(rows, day, date):
+    changes = []
+    for i in range(len(rows)):
+        Type = rows[i]["Type"]
+        Hour = rows[i]["Hour"]
+        Class = rows[i]["Class"]
+        Teacher = rows[i]["Teacher"]
+        Room = rows[i]["Room"]
+        Subject = rows[i]["Subject"]
+        Comment = rows[i]["Comment"]
         Day = day
         Date = date
 
@@ -155,43 +168,48 @@ async def notify(rows, day, date):
             print("Something went wrong with the days")
             continue
 
-        message = f'> Day: {Day}\n'\
-                  f'> Type: {Type}\n'\
-                  f'> Hours: {Hour}\n'\
-                  f'> Subject: {Subject}\n'\
-                  f'> Teacher: {Teacher}\n'\
-                  f'> Class: {Class}\n'\
-                  f'> Room: {Room}'
 
-        await send(notify_method=notify_method, message=message)
+        change = ScheduleChange(Type=Type,
+                                Hour=Hour,
+                                Class=Class,
+                                Teacher=Teacher,
+                                Room=Room,
+                                Subject=Subject,
+                                Comment=Comment,
+                                Day=Day,
+                                Date=Date)
+        changes.append(change)
 
-        '''if Type == "Unterrichtsänderung":
-            message = f'{Day} there is a class change in the {Hour}th hour: {Subject}'
-            await send(notify_method=notify_method, message=message)
-        elif Type == "Betreuung":
-            message = f'{Day} in the {Hour}th hour you are being supervised by {Teacherchange} in {Subject}.'
-            print(message)
-            await send(notify_method=notify_method, message=message)
-        elif Type == "Ausfall" or Type == "Entfall":
-            message = f'{Day} in the {Hour}th hour your {Subject} class is cancelled.'
-            print(message)
-            await send(notify_method=notify_method, message=message)
-        elif Type == "Raumänderung":
-            message = f'{Day} in the {Hour}th hour your room changes in {Subject}: {Room}'
-            print(message)
-            await send(notify_method=notify_method, message=message)
-        elif Type == "Pausenaufsicht":
-            message = f'{Day} in the {Hour}th hour your Teacher {Teacher} has break supervision'
-            print(message)
-            await send(notify_method=notify_method, message=message)
-        elif Type == "Vertretung":
-            message = f'{Day} in the {Hour}th hour you are being teached by {Teacherchange} instead of {Teacher} in {Subject}'
-            print(message)
+    return changes
+
+
+async def notify(changes, prev_changes):
+    if notify_method == "discord_webhook":
+        if not webhook_url.startswith("https://discord.com/api/webhooks/"):
+            print(f"{webhook_url} is not a discord webhook url. Url has to startwith: https://discord.com/api/webhooks/")
+            quit()
+
+    i = 0
+    matches = []
+    for change in changes:
+        for prev_change in prev_changes:
+            if str(change) in str(prev_change):
+                matches.append(str(change))
+        i += 1
+    for change in changes:
+        if str(change) not in matches:
+            print(change)
+            message = f'> Day: {change.Day}\n'\
+                      f'> Type: {change.Type}\n'\
+                      f'> Hours: {change.Hour}\n'\
+                      f'> Subject: {change.Subject}\n'\
+                      f'> Teacher: {change.Teacher}\n'\
+                      f'> Class: {change.Class}\n'\
+                      f'> Room: {change.Room}'
+
             await send(notify_method=notify_method, message=message)
         else:
-            message = f'{Day} in the {Hour}th hour you have: {Type}'
-            print(message)
-            await send(notify_method=notify_method, message=message)'''
+            continue
 
 
 async def send(notify_method, message):
@@ -218,10 +236,10 @@ async def send(notify_method, message):
                         print("Matrix-Nofier seems to be down")
 
 
-async def save(table):
+async def save(changes):
     try:
-        with open("./saved/prevtable.html", "w", encoding="utf-8") as f:
-            f.write(table)
+        with open("./saved/changes.p", "wb") as f:
+            pickle.dump(changes, f)
             f.close()
     except UnicodeEncodeError:
         print("Unicode error while saving prevtable.")
@@ -239,32 +257,32 @@ async def main():
 
     await logout(session)
 
-    if not os.path.exists("./saved/prevtable.html"):
-        if os.path.exists("./saved"):
-            with open('./saved/prevtable.html', 'w', encoding="utf-8") as f:
-                prevtable = ""
-                pass
+    if os.path.exists("./saved"):
+        if os.path.exists("./saved/changes.p"):
+            prev_changes = pickle.load(open('./saved/changes.p', 'rb'))
         else:
-            os.mkdir("./saved")
-            with open('./saved/prevtable.html', 'w', encoding="utf-8") as f:
-                prevtable = ""
-                pass
+            prev_changes = []
     else:
-        with open('./saved/prevtable.html', 'r', encoding="utf-8") as f:
-            prevtable = f.read()
-            f.close()
-
-    if prevtable == str(plan):
-        print("Nothing changed exiting")
-        quit()
+        os.mkdir("./saved")
+        prev_changes = []
 
     df = await fetchdf(plan)
 
     rows = await fetchrows(df)
 
-    await notify(rows, day, date)
+    changes = await changefetch(rows, day, date)
 
-    await save(str(plan))
+    if prev_changes:
+        if not changes[0].Day == prev_changes[0].Day:
+            prev_changes = []
+
+    if str(prev_changes) == str(changes):
+        print("Nothing changed exiting")
+        quit()
+
+    await notify(changes, prev_changes)
+
+    await save(changes)
 
     print("Sucessfully ran")
 
