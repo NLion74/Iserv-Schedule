@@ -220,7 +220,7 @@ async def send(notify_method, message):
 
 async def save(table):
     try:
-        with open("./saved/prevtable.html", "w") as f:
+        with open("./saved/prevtable.html", "w", encoding="utf-8") as f:
             f.write(table)
             f.close()
     except UnicodeEncodeError:
@@ -240,11 +240,11 @@ async def main():
     await logout(session)
 
     if not os.path.exists("./saved/prevtable.html"):
-        with open('./saved/prevtable.html', 'w') as f:
+        with open('./saved/prevtable.html', 'w', encoding="utf-8") as f:
             prevtable = ""
             pass
     else:
-        with open('./saved/prevtable.html', 'r') as f:
+        with open('./saved/prevtable.html', 'r', encoding="utf-8") as f:
             prevtable = f.read()
             f.close()
 
