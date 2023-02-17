@@ -106,7 +106,7 @@ async def fetchdf(plan):
 
 
 async def fetchrows(df):
-    rows = {"Type": [], "Hour": [], "Class": [], "Teacher": [], "Teacher-change": [], "Room": [], "Subject": [], "Comment": []}
+    rows = {"Type": [], "Hour": [], "Class": [], "Teacher": [], "Room": [], "Subject": [], "Comment": []}
     for i, row in df.iterrows():
         if str(row['Class']) == your_class or your_class in str((row['Class'])):
             if str(row['Type']) == str(row['Class']) and str(row['Hour']) == str(row['Class']) and str(
@@ -117,11 +117,7 @@ async def fetchrows(df):
                 rows["Type"].append(row['Type'])
                 rows["Hour"].append(row['Hour'])
                 rows["Class"].append(row['Class'])
-                rows["Teacher"].append(str(row["Teacher"]).rsplit("â†’")[0])
-                try:
-                    rows["Teacher-change"].append(str(row["Teacher"]).rsplit("â†’")[1])
-                except:
-                    rows["Teacher-change"].append(str(row["Teacher"]).rsplit("â†’")[(len(str(row["Teacher"]).rsplit("â†’")) - 1)])
+                rows["Teacher"].append(row["Teacher"])
                 rows["Room"].append(row['Room'])
                 rows["Subject"].append(row['Subject'])
                 rows["Comment"].append(row['Comment'])
@@ -140,17 +136,11 @@ async def notify(rows, day, date):
         Hour = rows["Hour"][i]
         Class = rows["Class"][i]
         Teacher = rows["Teacher"][i]
-        Teacherchange = rows["Teacher-change"][i]
         Room = rows["Room"][i]
         Subject = rows["Subject"][i]
         Comment = rows["Comment"][i]
         Day = day
         Date = date
-
-        if "â†’" in Teacher:
-            Teacher = str(Teacher).rsplit("â†’")[0]
-        elif "â†’" in Teacherchange:
-            Teacherchange = str(Teacherchange).rsplit("â†’")[1]
 
         if Type == "Lehrertausch":
             Type = "Vertretung"
@@ -165,7 +155,17 @@ async def notify(rows, day, date):
             print("Something went wrong with the days")
             continue
 
-        if Type == "Unterrichtsänderung":
+        message = f'> Day: {Day}\n'\
+                  f'> Type: {Type}\n'\
+                  f'> Hours: {Hour}\n'\
+                  f'> Subject: {Subject}\n'\
+                  f'> Teacher: {Teacher}\n'\
+                  f'> Class: {Class}\n'\
+                  f'> Room: {Room}'
+
+        await send(notify_method=notify_method, message=message)
+
+        '''if Type == "Unterrichtsänderung":
             message = f'{Day} there is a class change in the {Hour}th hour: {Subject}'
             await send(notify_method=notify_method, message=message)
         elif Type == "Betreuung":
@@ -191,7 +191,7 @@ async def notify(rows, day, date):
         else:
             message = f'{Day} in the {Hour}th hour you have: {Type}'
             print(message)
-            await send(notify_method=notify_method, message=message)
+            await send(notify_method=notify_method, message=message)'''
 
 
 async def send(notify_method, message):
@@ -201,19 +201,19 @@ async def send(notify_method, message):
             webhook.execute()
         elif method.lower() == "matrix_notifier":
             try:
-                requests.post(url, data=message.encode("utf-8"), headers={"Channel": room_id, "Authorization": auth_secret})
+                requests.post(url, data=message.encode("utf-8"), headers={"Channel": room_id, "Authorization": auth_secret, "markdown": "true"})
             except requests.exceptions.RequestException:
                 print("Matrix-Nofier seems to be down")
             except UnicodeError:
                 message = message.replace("â†’", "-->")
                 try:
-                    requests.post(url, data=message.encode("utf-8"), headers={"Channel": room_id, "Authorization": auth_secret})
+                    requests.post(url, data=message.encode("utf-8"), headers={"Channel": room_id, "Authorization": auth_secret, "markdown": "true"})
                 except requests.exceptions.RequestException:
                     print("Matrix-Nofier seems to be down")
                 except UnicodeError:
                     message = message.encode("utf-8")
                     try:
-                        requests.post(url, data=message.encode("utf-8"), headers={"Channel": room_id, "Authorization": auth_secret})
+                        requests.post(url, data=message.encode("utf-8"), headers={"Channel": room_id, "Authorization": auth_secret, "markdown": "true"})
                     except requests.exceptions.RequestException:
                         print("Matrix-Nofier seems to be down")
 
@@ -240,9 +240,15 @@ async def main():
     await logout(session)
 
     if not os.path.exists("./saved/prevtable.html"):
-        with open('./saved/prevtable.html', 'w', encoding="utf-8") as f:
-            prevtable = ""
-            pass
+        if os.path.exists("./saved"):
+            with open('./saved/prevtable.html', 'w', encoding="utf-8") as f:
+                prevtable = ""
+                pass
+        else:
+            os.mkdir("./saved")
+            with open('./saved/prevtable.html', 'w', encoding="utf-8") as f:
+                prevtable = ""
+                pass
     else:
         with open('./saved/prevtable.html', 'r', encoding="utf-8") as f:
             prevtable = f.read()
